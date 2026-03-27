@@ -943,12 +943,12 @@ export function createWorker(botConfig: BotConfig, router: BridgeRouter, tunnelM
         const parts = splitMessage(html);
 
         if (thinkingMsgId) {
+          // In groups, don't delete the thinking message to preserve message chain
+          // Just edit it to a minimal indicator
           try {
-            await bot.api.deleteMessage(chatId, thinkingMsgId);
+            await bot.api.editMessageText(chatId, thinkingMsgId, "✓ Done").catch(() => {});
           } catch {
-            await bot.api
-              .editMessageText(chatId, thinkingMsgId, "⏤")
-              .catch(() => {});
+            // If edit fails, ignore (message may have been deleted)
           }
         }
 
