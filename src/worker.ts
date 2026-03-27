@@ -1151,7 +1151,7 @@ export function createWorker(botConfig: BotConfig, router: BridgeRouter, tunnelM
       return;
     }
 
-    const tmpDir = router.getTempDir();
+    const tmpDir = router.getTempDir(chatId);
     fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
     const rawName = doc.file_name || `file-${Date.now()}`;
     const fileName = path.basename(rawName).replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -1195,7 +1195,7 @@ export function createWorker(botConfig: BotConfig, router: BridgeRouter, tunnelM
       return;
     }
 
-    const tmpDir = router.getTempDir();
+    const tmpDir = router.getTempDir(chatId);
     fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
     const ext = path.extname(file.file_path || ".jpg") || ".jpg";
     const tmpFile = path.join(tmpDir, `tg-${Date.now()}${ext}`);

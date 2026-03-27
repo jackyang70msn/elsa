@@ -206,7 +206,12 @@ export class BridgeRouter {
     return firstBridge?.getSessionHistory(sessionId, limit) || [];
   }
 
-  getTempDir(): string {
+  getTempDir(chatId?: number): string {
+    if (chatId) {
+      const bridge = this.getBridge(chatId);
+      return bridge?.getTempDir() || "";
+    }
+    // Fallback: return first bridge's tempDir
     const firstBridge = this.bridges.values().next().value as ClaudeBridge | undefined;
     return firstBridge?.getTempDir() || "";
   }
