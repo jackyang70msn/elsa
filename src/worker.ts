@@ -1154,7 +1154,11 @@ export function createWorker(botConfig: BotConfig, router: BridgeRouter, tunnelM
     const tmpDir = router.getTempDir(chatId);
     fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
     const rawName = doc.file_name || `file-${Date.now()}`;
-    const fileName = path.basename(rawName).replace(/[^a-zA-Z0-9._-]/g, "_");
+    const ext = path.extname(rawName);
+    const baseName = path.basename(rawName, ext);
+    // Sanitize: keep only safe chars, preserve extension
+    const safeName = baseName.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const fileName = safeName + ext;
     const tmpFile = path.join(tmpDir, fileName);
 
     let arrayBuf: Buffer;
