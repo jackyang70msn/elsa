@@ -1,0 +1,23 @@
+{
+  "sessions": {
+    "6102973549642005": "fe3132ca-efe1-417b-8509-407d4c58adc9",
+    "6907154170642716": "53405776-b270-4f35-a196-3860959daad2"
+  },
+  "sessionTokens": {
+    "6102973549642005": {
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "cacheCreationTokens": 0,
+      "cacheReadTokens": 0
+    },
+    "6907154170642716": {
+      "inputTokens": 792,
+      "outputTokens": 12984,
+      "cacheCreationTokens": 120473,
+      "cacheReadTokens": 1072496
+    }
+  },
+  "selectedModels": {},
+  "allowedUsers": {},
+  "permissionModes": {}
+}
