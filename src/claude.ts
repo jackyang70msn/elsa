@@ -165,6 +165,7 @@ export class ClaudeBridge {
   private lastPrompts = new Map<number, string>();
   private allowedUsers = new Map<number, number[]>();
   private permissionModes = new Map<number, PermissionMode>();
+  private cleanupTimers = new Map<string, NodeJS.Timeout>(); // Track cleanup timers by tmpDir path
   // Strip CLAUDECODE env var once so CLI subprocesses don't refuse to start
   // when the daemon is launched from within a Claude Code session.
   private readonly cleanEnv: Record<string, string | undefined>;
@@ -425,6 +426,14 @@ export class ClaudeBridge {
     this.activeAborts.clear();
   }
 
+  shutdown(): void {
+    // Cancel all pending cleanup timers
+    for (const timer of this.cleanupTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.cleanupTimers.clear();
+  }
+
   getTempDir(): string {
     // Store temp files inside the working directory so Claude CLI can read them
     // (Claude may not have access to system temp dirs outside the working dir)
@@ -432,16 +441,28 @@ export class ClaudeBridge {
   }
 
   cleanupTempFiles(): void {
-    try {
-      const tmpDir = this.getTempDir();
-      if (fs.existsSync(tmpDir)) {
-        const files = fs.readdirSync(tmpDir);
-        for (const f of files) {
-          fs.unlinkSync(path.join(tmpDir, f));
+    const tmpDir = this.getTempDir();
+
+    // Cancel any existing timer for this tmpDir
+    if (this.cleanupTimers.has(tmpDir)) {
+      clearTimeout(this.cleanupTimers.get(tmpDir)!);
+    }
+
+    // Schedule cleanup for 30 minutes from now
+    const timer = setTimeout(() => {
+      try {
+        if (fs.existsSync(tmpDir)) {
+          const files = fs.readdirSync(tmpDir);
+          for (const f of files) {
+            fs.unlinkSync(path.join(tmpDir, f));
+          }
+          fs.rmdirSync(tmpDir);
         }
-        fs.rmdirSync(tmpDir);
-      }
-    } catch {}
+      } catch {}
+      this.cleanupTimers.delete(tmpDir);
+    }, 30 * 60 * 1000); // 30 minutes
+
+    this.cleanupTimers.set(tmpDir, timer);
   }
 
   private spawnClaude(opts: {

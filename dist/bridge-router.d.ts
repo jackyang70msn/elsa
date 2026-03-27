@@ -53,7 +53,8 @@ export declare class BridgeRouter {
         text: string;
         timestamp: string;
     }>;
-    getTempDir(): string;
+    getTempDir(chatId?: number): string;
     cleanupTempFiles(): void;
     abortAll(): void;
+    shutdown(): void;
 }

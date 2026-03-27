@@ -943,10 +943,14 @@ export function createWorker(botConfig, router, tunnelManager, scheduleManager) 
             await ctx.reply("Error: Could not get file path from Telegram.");
             return;
         }
-        const tmpDir = router.getTempDir();
+        const tmpDir = router.getTempDir(chatId);
         fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
         const rawName = doc.file_name || `file-${Date.now()}`;
-        const fileName = path.basename(rawName).replace(/[^a-zA-Z0-9._-]/g, "_");
+        const ext = path.extname(rawName);
+        const baseName = path.basename(rawName, ext);
+        // Sanitize: keep only safe chars, preserve extension
+        const safeName = baseName.replace(/[^a-zA-Z0-9_-]/g, "_");
+        const fileName = safeName + ext;
         const tmpFile = path.join(tmpDir, fileName);
         let arrayBuf;
         try {
@@ -980,7 +984,7 @@ export function createWorker(botConfig, router, tunnelManager, scheduleManager) 
             await ctx.reply("Error: Could not get file path from Telegram.");
             return;
         }
-        const tmpDir = router.getTempDir();
+        const tmpDir = router.getTempDir(chatId);
         fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
         const ext = path.extname(file.file_path || ".jpg") || ".jpg";
         const tmpFile = path.join(tmpDir, `tg-${Date.now()}${ext}`);

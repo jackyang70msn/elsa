@@ -163,7 +163,12 @@ export class BridgeRouter {
         const firstBridge = this.bridges.values().next().value;
         return firstBridge?.getSessionHistory(sessionId, limit) || [];
     }
-    getTempDir() {
+    getTempDir(chatId) {
+        if (chatId) {
+            const bridge = this.getBridge(chatId);
+            return bridge?.getTempDir() || "";
+        }
+        // Fallback: return first bridge's tempDir
         const firstBridge = this.bridges.values().next().value;
         return firstBridge?.getTempDir() || "";
     }
@@ -176,6 +181,11 @@ export class BridgeRouter {
     abortAll() {
         for (const bridge of this.bridges.values()) {
             bridge.abortAll();
+        }
+    }
+    shutdown() {
+        for (const bridge of this.bridges.values()) {
+            bridge.shutdown();
         }
     }
 }

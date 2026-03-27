@@ -1,7 +1,7 @@
 {
   "sessions": {
     "6102973549642005": "fe3132ca-efe1-417b-8509-407d4c58adc9",
-    "6907154170642716": "53405776-b270-4f35-a196-3860959daad2"
+    "6907154170642716": "ded38063-b231-4ba6-bf5c-244f73723f5c"
   },
   "sessionTokens": {
     "6102973549642005": {
@@ -11,10 +11,10 @@
       "cacheReadTokens": 0
     },
     "6907154170642716": {
-      "inputTokens": 792,
-      "outputTokens": 12984,
-      "cacheCreationTokens": 120473,
-      "cacheReadTokens": 1072496
+      "inputTokens": 4,
+      "outputTokens": 375,
+      "cacheCreationTokens": 16641,
+      "cacheReadTokens": 51430
     }
   },
   "selectedModels": {},

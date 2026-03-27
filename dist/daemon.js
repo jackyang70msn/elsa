@@ -91,6 +91,7 @@ async function startWorker(botConfig) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`[${botConfig.username}] Polling error:`, msg);
         router.abortAll();
+        router.shutdown();
         try {
             bot.stop();
         }
@@ -104,6 +105,7 @@ async function stopWorker(botId) {
     if (!worker)
         return;
     worker.router.abortAll();
+    worker.router.shutdown();
     scheduleManager.removeAllForBot(botId);
     await worker.tunnelManager.closeAll();
     await worker.bot.stop();
@@ -150,6 +152,7 @@ async function stopDiscordWorker(botId) {
     if (!worker)
         return;
     worker.router.abortAll();
+    worker.router.shutdown();
     scheduleManager.removeAllForBot(snowflakeToNumeric(botId));
     await worker.tunnelManager.closeAll();
     worker.client.destroy();
@@ -334,6 +337,7 @@ async function main() {
             catch (err) {
                 console.error(`[${worker.config.username}] Health check failed, will restart: ${err.message}`);
                 worker.router.abortAll();
+                worker.router.shutdown();
                 try {
                     await worker.bot.stop();
                 }
@@ -387,6 +391,7 @@ async function main() {
                 if (!worker.client.isReady()) {
                     console.error(`[${worker.config.username}] Discord health check failed, will restart`);
                     worker.router.abortAll();
+                    worker.router.shutdown();
                     try {
                         worker.client.destroy();
                     }
@@ -473,6 +478,7 @@ const shutdown = async () => {
     scheduleManager?.stop();
     for (const [, worker] of activeWorkers) {
         worker.router.abortAll();
+        worker.router.shutdown();
         try {
             await worker.tunnelManager.closeAll();
         }
@@ -485,6 +491,7 @@ const shutdown = async () => {
     activeWorkers.clear();
     for (const [, worker] of activeDiscordWorkers) {
         worker.router.abortAll();
+        worker.router.shutdown();
         try {
             await worker.tunnelManager.closeAll();
         }

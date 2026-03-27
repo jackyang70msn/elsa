@@ -111,6 +111,7 @@ export class ClaudeBridge {
     lastPrompts = new Map();
     allowedUsers = new Map();
     permissionModes = new Map();
+    cleanupTimers = new Map(); // Track cleanup timers by tmpDir path
     // Strip CLAUDECODE env var once so CLI subprocesses don't refuse to start
     // when the daemon is launched from within a Claude Code session.
     cleanEnv;
@@ -362,23 +363,39 @@ export class ClaudeBridge {
         }
         this.activeAborts.clear();
     }
+    shutdown() {
+        // Cancel all pending cleanup timers
+        for (const timer of this.cleanupTimers.values()) {
+            clearTimeout(timer);
+        }
+        this.cleanupTimers.clear();
+    }
     getTempDir() {
         // Store temp files inside the working directory so Claude CLI can read them
         // (Claude may not have access to system temp dirs outside the working dir)
         return path.join(this.workingDir, ".elsa-tmp");
     }
     cleanupTempFiles() {
-        try {
-            const tmpDir = this.getTempDir();
-            if (fs.existsSync(tmpDir)) {
-                const files = fs.readdirSync(tmpDir);
-                for (const f of files) {
-                    fs.unlinkSync(path.join(tmpDir, f));
-                }
-                fs.rmdirSync(tmpDir);
-            }
+        const tmpDir = this.getTempDir();
+        // Cancel any existing timer for this tmpDir
+        if (this.cleanupTimers.has(tmpDir)) {
+            clearTimeout(this.cleanupTimers.get(tmpDir));
         }
-        catch { }
+        // Schedule cleanup for 30 minutes from now
+        const timer = setTimeout(() => {
+            try {
+                if (fs.existsSync(tmpDir)) {
+                    const files = fs.readdirSync(tmpDir);
+                    for (const f of files) {
+                        fs.unlinkSync(path.join(tmpDir, f));
+                    }
+                    fs.rmdirSync(tmpDir);
+                }
+            }
+            catch { }
+            this.cleanupTimers.delete(tmpDir);
+        }, 30 * 60 * 1000); // 30 minutes
+        this.cleanupTimers.set(tmpDir, timer);
     }
     spawnClaude(opts) {
         const mode = opts.permissionMode || DEFAULT_PERMISSION_MODE;

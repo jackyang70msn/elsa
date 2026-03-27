@@ -228,4 +228,10 @@ export class BridgeRouter {
       bridge.abortAll();
     }
   }
+
+  shutdown(): void {
+    for (const bridge of this.bridges.values()) {
+      bridge.shutdown();
+    }
+  }
 }

@@ -65,6 +65,7 @@ export declare class ClaudeBridge {
     private lastPrompts;
     private allowedUsers;
     private permissionModes;
+    private cleanupTimers;
     private readonly cleanEnv;
     constructor(botId: number, workingDir: string, tag: string, stateDir?: string);
     private loadState;
@@ -98,6 +99,7 @@ export declare class ClaudeBridge {
     setPermissionMode(chatId: number, mode: PermissionMode): void;
     getPermissionMode(chatId: number): PermissionMode;
     abortAll(): void;
+    shutdown(): void;
     getTempDir(): string;
     cleanupTempFiles(): void;
     private spawnClaude;

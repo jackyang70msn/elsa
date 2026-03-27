@@ -108,6 +108,7 @@ async function startWorker(botConfig: BotConfig): Promise<void> {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[${botConfig.username}] Polling error:`, msg);
     router.abortAll();
+    router.shutdown();
     try { bot.stop(); } catch {}
     activeWorkers.delete(botConfig.id);
     lastWorkerError.set(botConfig.id, Date.now());
@@ -119,6 +120,7 @@ async function stopWorker(botId: number): Promise<void> {
   if (!worker) return;
 
   worker.router.abortAll();
+  worker.router.shutdown();
   scheduleManager.removeAllForBot(botId);
   await worker.tunnelManager.closeAll();
   await worker.bot.stop();
@@ -176,6 +178,7 @@ async function stopDiscordWorker(botId: string): Promise<void> {
   if (!worker) return;
 
   worker.router.abortAll();
+  worker.router.shutdown();
   scheduleManager.removeAllForBot(snowflakeToNumeric(botId));
   await worker.tunnelManager.closeAll();
   worker.client.destroy();
@@ -389,6 +392,7 @@ async function main() {
       } catch (err) {
         console.error(`[${worker.config.username}] Health check failed, will restart: ${(err as Error).message}`);
         worker.router.abortAll();
+        worker.router.shutdown();
         try { await worker.bot.stop(); } catch {}
         activeWorkers.delete(id);
         return worker.config;
@@ -439,6 +443,7 @@ async function main() {
         if (!worker.client.isReady()) {
           console.error(`[${worker.config.username}] Discord health check failed, will restart`);
           worker.router.abortAll();
+          worker.router.shutdown();
           try { worker.client.destroy(); } catch {}
           activeDiscordWorkers.delete(id);
           deadDiscord.push(worker.config);
@@ -518,12 +523,14 @@ const shutdown = async () => {
   scheduleManager?.stop();
   for (const [, worker] of activeWorkers) {
     worker.router.abortAll();
+    worker.router.shutdown();
     try { await worker.tunnelManager.closeAll(); } catch {}
     try { await worker.bot.stop(); } catch {}
   }
   activeWorkers.clear();
   for (const [, worker] of activeDiscordWorkers) {
     worker.router.abortAll();
+    worker.router.shutdown();
     try { await worker.tunnelManager.closeAll(); } catch {}
     try { worker.client.destroy(); } catch {}
   }
