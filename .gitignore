@@ -4,3 +4,4 @@ dist/
 .elsa-tmp/
 .playwright-mcp/
 *.log
+CLAUDE.md

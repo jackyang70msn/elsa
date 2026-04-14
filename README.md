@@ -43,8 +43,10 @@ npm install
 ### Windows quick start
 
 ```bat
-setup.bat       REM Install dependencies + interactive setup
-start.bat       REM Launch the daemon
+setup.bat              REM Install dependencies + interactive setup
+start.bat              REM Launch the daemon (foreground)
+start-background.bat   REM Launch the daemon (background, minimized)
+stop-background.bat    REM Stop the background daemon
 ```
 
 ### Linux one-liner
@@ -92,17 +94,18 @@ npm start
 # Watch mode (auto-restart on file changes)
 npm run dev
 
-# Background daemon
+# Background daemon (macOS / Linux)
 elsa start
-
-# Check status
 elsa status
-
-# View logs
 elsa logs
-
-# Stop
 elsa stop
+```
+
+**Windows background mode:**
+
+```bat
+start-background.bat   REM Start daemon minimized to taskbar
+stop-background.bat    REM Stop the background daemon
 ```
 
 ### First steps
