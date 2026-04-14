@@ -123,6 +123,7 @@ export function createWorker(botConfig: BotConfig, router: BridgeRouter, tunnelM
     "<b>Commands:</b>\n" +
     "/new — Start a fresh session (clears context)\n" +
     "/model — Switch Claude model (Opus / Sonnet / Haiku)\n" +
+    "/mode — Switch permission mode (Bypass / Accept Edits / Plan)\n" +
     "/cost — Show token usage for the current session\n" +
     "/session — Get session ID to continue in CLI\n" +
     "/resume — Resume a CLI session in Telegram\n" +
@@ -535,6 +536,7 @@ export function createWorker(botConfig: BotConfig, router: BridgeRouter, tunnelM
           cronExpr: parsed.cronExpr,
           humanLabel: parsed.humanLabel,
           ...(parsed.once && { once: true }),
+          ...(parsed.reminderOnly && { reminderOnly: true }),
         },
         timer,
       });
@@ -543,11 +545,16 @@ export function createWorker(botConfig: BotConfig, router: BridgeRouter, tunnelM
         .text("Confirm", `cron:confirm:${chatId}`)
         .text("Cancel", `cron:cancel:${chatId}`);
 
+      const modeLabel = parsed.reminderOnly ? " ⏰ 提醒模式" : "";
+      const modeNote = parsed.reminderOnly
+        ? "<i>提醒模式：時間到時直接發送訊息，不啟動 Claude。</i>"
+        : "<i>排程任務將自動執行，不需人工核准。</i>";
+
       await ctx.reply(
-        "<b>確認排程</b>\n\n" +
+        `<b>確認排程${modeLabel}</b>\n\n` +
           `<b>時間：</b> ${escapeHtml(parsed.humanLabel)}${parsed.once ? " (一次性)" : ""}\n` +
           `<b>任務：</b> ${escapeHtml(parsed.prompt)}\n\n` +
-          "<i>排程任務將自動執行，不需人工核准。</i>",
+          modeNote,
         { parse_mode: "HTML", reply_markup: keyboard }
       );
     } else if (subCmd === "list") {

@@ -1085,6 +1085,7 @@ export function createDiscordWorker(
                 platform: "discord",
                 channelId,
                 ...(parsed.once && { once: true }),
+                ...(parsed.reminderOnly && { reminderOnly: true }),
               },
               timer: schedTimer,
             });
@@ -1100,13 +1101,18 @@ export function createDiscordWorker(
                 .setStyle(ButtonStyle.Danger)
             );
 
+            const modeLabel = parsed.reminderOnly ? " ⏰ Reminder mode" : "";
+            const modeNote = parsed.reminderOnly
+              ? "_Reminder mode: sends a message directly without starting Claude._"
+              : "_Scheduled tasks run automatically without approval prompts._";
+
             await interaction
               .editReply({
                 content:
-                  "**Confirm schedule**\n\n" +
+                  `**Confirm schedule${modeLabel}**\n\n` +
                   `**When:** ${parsed.humanLabel}${parsed.once ? " (one-time)" : ""}\n` +
                   `**Task:** ${parsed.prompt}\n\n` +
-                  "_Scheduled tasks run automatically without approval prompts._",
+                  modeNote,
                 components: [confirmRow],
               })
               .catch(() => {});

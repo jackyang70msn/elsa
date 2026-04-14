@@ -32,6 +32,7 @@ const WORKER_COMMANDS = [
   { command: "resume",     description: "Resume a CLI session in Telegram" },
   { command: "cancel",     description: "Abort the current operation" },
   { command: "help",       description: "Show help" },
+  { command: "mode",       description: "Switch permission mode (Bypass / Accept Edits / Plan)" },
   { command: "preview",    description: "Open live preview tunnel to your dev server" },
   { command: "close",      description: "Close active preview tunnel" },
   { command: "repo",       description: "Manage project directories (add / list / switch / remove)" },
@@ -250,7 +251,39 @@ async function main() {
 
   // Initialize schedule manager
   scheduleManager = new ScheduleManager(async (schedule) => {
-    const { botId, chatId, prompt, id: scheduleId, platform, channelId } = schedule;
+    const { botId, chatId, prompt, id: scheduleId, platform, channelId, reminderOnly } = schedule;
+
+    // Reminder-only mode: send message directly without spawning Claude session
+    if (reminderOnly) {
+      if (platform === "discord" && channelId) {
+        let discordWorker: { config: DiscordBotConfig; client: Client; router: BridgeRouter; tunnelManager: TunnelManager } | undefined;
+        for (const [id, w] of activeDiscordWorkers) {
+          if (snowflakeToNumeric(id) === botId) {
+            discordWorker = w;
+            break;
+          }
+        }
+        if (!discordWorker) {
+          console.error(`[scheduler] Discord worker ${botId} not found for schedule ${scheduleId}`);
+          return;
+        }
+        const channel = await discordWorker.client.channels.fetch(channelId).catch((err: Error) => {
+          console.error(`[scheduler] Failed to fetch channel ${channelId}: ${err.message}`);
+          return null;
+        });
+        if (channel && "send" in channel) {
+          await channel.send(prompt).catch(() => {});
+        }
+      } else {
+        const worker = activeWorkers.get(botId);
+        if (!worker) {
+          console.error(`[scheduler] Worker ${botId} not found for schedule ${scheduleId}`);
+          return;
+        }
+        await worker.bot.api.sendMessage(chatId, prompt).catch(() => {});
+      }
+      return;
+    }
 
     if (platform === "discord" && channelId) {
       // Discord path: find discord worker by numeric botId

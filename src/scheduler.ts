@@ -19,6 +19,7 @@ export interface Schedule {
   platform?: "telegram" | "discord";
   channelId?: string;
   once?: boolean;
+  reminderOnly?: boolean;
 }
 
 export type ScheduleRunCallback = (schedule: Schedule) => Promise<void>;
@@ -137,15 +138,17 @@ export async function parseScheduleWithClaude(input: string): Promise<{
   humanLabel: string;
   prompt: string;
   once?: boolean;
+  reminderOnly?: boolean;
 } | null> {
   const prompt =
     `Parse this schedule request and return ONLY valid JSON with no explanation or markdown:\n` +
-    `{"cronExpr": "...", "humanLabel": "...", "prompt": "...", "once": false}\n\n` +
+    `{"cronExpr": "...", "humanLabel": "...", "prompt": "...", "once": false, "reminderOnly": false}\n\n` +
     `Rules:\n` +
     `- cronExpr: standard 5-field cron expression that best matches the requested time\n` +
     `- humanLabel: short human-readable label in the SAME LANGUAGE as the input, e.g. "每天早上 9 點", "每週一早上 9 點", "每 3 天一次". If input is English, use English.\n` +
-    `- prompt: rewrite the task as a clear, precise, actionable instruction for an AI agent running autonomously with no human present. Use the SAME LANGUAGE as the input.\n` +
-    `- once: set to true if the user wants a ONE-TIME task (e.g. "today at 3pm", "in 30 minutes", "tomorrow 9am", "今天下午3點", "明天早上9點"). Set to false for recurring tasks (e.g. "every day", "daily", "weekly", "每天", "每週").\n\n` +
+    `- prompt: rewrite the task as a clear, precise, actionable instruction for an AI agent running autonomously with no human present. Use the SAME LANGUAGE as the input. If reminderOnly is true, write the reminder message itself (e.g. "該吃藥了！記得按時服藥 💊").\n` +
+    `- once: set to true if the user wants a ONE-TIME task (e.g. "today at 3pm", "in 30 minutes", "tomorrow 9am", "今天下午3點", "明天早上9點"). Set to false for recurring tasks (e.g. "every day", "daily", "weekly", "每天", "每週").\n` +
+    `- reminderOnly: set to true if the task is a simple reminder/notification that does NOT require any code execution, file operations, or AI reasoning — just sending a message to the user (e.g. "remind me to take medicine", "提醒我吃藥", "remind me to drink water", "提醒我開會"). Set to false if the task requires actual work (e.g. "run tests", "check logs", "update docs", "執行測試").\n\n` +
     `Input: "${input.replace(/"/g, '\\"')}"`;
 
   try {
@@ -197,7 +200,7 @@ export async function parseScheduleWithClaude(input: string): Promise<{
       return null;
     }
 
-    return JSON.parse(jsonMatch[0]) as { cronExpr: string; humanLabel: string; prompt: string; once?: boolean };
+    return JSON.parse(jsonMatch[0]) as { cronExpr: string; humanLabel: string; prompt: string; once?: boolean; reminderOnly?: boolean };
   } catch (err) {
     console.error("[scheduler] Parse error:", err);
     return null;
