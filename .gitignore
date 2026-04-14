@@ -6,3 +6,4 @@ dist/
 *.log
 CLAUDE.md
 ai_doc/
+docs/
