@@ -5,3 +5,4 @@ dist/
 .playwright-mcp/
 *.log
 CLAUDE.md
+ai_doc/
