@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.elsa/
+.elsa-tmp/
+.playwright-mcp/
+*.log
