@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import type { Bot } from "grammy";
 import type { Client } from "discord.js";
 import { ClaudeBridge } from "./claude.js";
@@ -198,9 +199,16 @@ function getActiveDiscordWorkers(): Map<string, { config: DiscordBotConfig }> {
 }
 
 function isProcessRunning(pid: number): boolean {
+  if (process.platform === "win32") {
+    // On Windows, process.kill(pid, 0) is unreliable — use tasklist instead
+    try {
+      const out = execSync(`tasklist /FI "PID eq ${pid}" /NH`, { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
+      return out.includes(String(pid));
+    } catch {
+      return false;
+    }
+  }
   try {
-    // Use signal 0 (non-destructive check) to see if process exists
-    // On Windows & Unix: throws if process doesn't exist
     process.kill(pid, 0);
     return true;
   } catch {
@@ -221,8 +229,23 @@ async function main() {
       if (existingPid && !isNaN(existingPid) && existingPid !== process.pid) {
         if (isProcessRunning(existingPid)) {
           // Another daemon is truly running
-          process.stderr.write(`❌ Daemon already running with PID ${existingPid}\n`);
-          process.stderr.write(`   Stop it first: npx tsx src/cli.ts stop\n`);
+          process.stderr.write(`\nERROR: Another Elsa is already running (PID ${existingPid}).\n`);
+          process.stderr.write(`       Stop it first: elsa stop\n\n`);
+          process.stderr.write(`Press any key to exit...`);
+          await new Promise<void>((resolve) => {
+            if (process.stdin.isTTY) {
+              process.stdin.setRawMode(true);
+              process.stdin.resume();
+              process.stdin.once("data", () => {
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+                resolve();
+              });
+            } else {
+              resolve();
+            }
+          });
+          process.stderr.write(`\n`);
           process.exit(1);
         }
       }

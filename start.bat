@@ -27,9 +27,21 @@ if not exist "node_modules" (
     echo.
 )
 
-:: Kill any existing Elsa daemon
-for /f "tokens=2" %%p in ('tasklist /fi "WINDOWTITLE eq Elsa Daemon" 2^>nul ^| findstr node') do (
-    taskkill /PID %%p /F >nul 2>&1
+:: Check for existing Elsa daemon via PID file
+set "PID_FILE=%USERPROFILE%\.elsa\daemon.pid"
+if exist "%PID_FILE%" (
+    set /p EXISTING_PID=<"%PID_FILE%"
+    if defined EXISTING_PID (
+        tasklist /FI "PID eq %EXISTING_PID%" 2>nul | findstr /I "node" >nul
+        if %errorlevel% equ 0 (
+            echo.
+            echo ERROR: Another Elsa is already running (PID %EXISTING_PID%).
+            echo        Stop it first: run stop-background.bat
+            echo.
+            pause
+            exit /b 1
+        )
+    )
 )
 
 title Elsa Daemon
