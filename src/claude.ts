@@ -54,12 +54,13 @@ export interface SendCallbacks {
 }
 
 export const AVAILABLE_MODELS = [
-  { id: "claude-opus-4-6", label: "Opus 4.6" },
+  { id: "claude-opus-4-7", label: "Opus 4.7" },
   { id: "claude-sonnet-4-6", label: "Sonnet 4.6" },
   { id: "claude-haiku-4-5-20251001", label: "Haiku 4.5" },
 ] as const;
 
 const DEFAULT_MODEL = AVAILABLE_MODELS[0].id;
+const VALID_MODEL_IDS = new Set<string>(AVAILABLE_MODELS.map((m) => m.id));
 
 // Claude Code-style spinner words shown during thinking
 const THINKING_WORDS = [
@@ -234,7 +235,9 @@ export class ClaudeBridge {
   }
 
   getModel(chatId: number): string {
-    return this.selectedModels.get(chatId) || DEFAULT_MODEL;
+    const saved = this.selectedModels.get(chatId);
+    if (saved && VALID_MODEL_IDS.has(saved)) return saved;
+    return DEFAULT_MODEL;
   }
 
   getSessionId(chatId: number): string | undefined {
@@ -492,7 +495,8 @@ export class ClaudeBridge {
     }
     // Pass prompt via stdin to avoid shell escaping issues on Windows
     // (e.g. apostrophes in "I've" get mangled by cmd.exe shell mode)
-    const child = spawn(resolveClaudePath(), args, {
+    const launch = resolveClaudePath();
+    const child = spawn(launch.command, [...launch.prependArgs, ...args], {
       cwd: this.workingDir,
       env: this.cleanEnv as NodeJS.ProcessEnv,
       stdio: ["pipe", "pipe", "pipe"],
@@ -551,15 +555,15 @@ export class ClaudeBridge {
       logStatus(word, this.tag);
     }, THINKING_ROTATE_MS);
 
-    const model = this.selectedModels.get(chatId) || DEFAULT_MODEL;
+    const model = this.getModel(chatId);
     const effectiveMode = permissionMode || this.getPermissionMode(chatId);
-    const child = this.spawnClaude({ prompt, model, sessionId, maxTurns, permissionMode: effectiveMode });
-
-    // Kill child process on abort
-    const onAbort = () => { try { child.kill(); } catch {} };
-    abortController.signal.addEventListener("abort", onAbort, { once: true });
+    let child: ChildProcess | undefined;
+    const onAbort = () => { try { child?.kill(); } catch {} };
 
     try {
+      child = this.spawnClaude({ prompt, model, sessionId, maxTurns, permissionMode: effectiveMode });
+      abortController.signal.addEventListener("abort", onAbort, { once: true });
+
       // Track tool_use blocks from stream events to capture Write file paths
       let streamToolName = "";
       let streamToolInputJson = "";
@@ -662,7 +666,7 @@ export class ClaudeBridge {
       this.activeAborts.delete(chatId);
       this.lastQueryEnd.set(chatId, Date.now());
       // Ensure child process is killed
-      try { child.kill(); } catch {}
+      try { child?.kill(); } catch {}
       this.cleanupTempFiles();
     }
   }

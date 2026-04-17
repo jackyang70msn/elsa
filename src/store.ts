@@ -55,22 +55,44 @@ export function snowflakeToNumeric(snowflake: string): number {
 
 // --- Claude CLI path resolution ---
 
-let _claudePath: string | null = null;
+export interface ClaudeLaunch {
+  /** Executable to spawn. */
+  command: string;
+  /** Args to prepend before caller-supplied arguments. */
+  prependArgs: string[];
+}
 
-/** Resolve full path to `claude` CLI binary, caching the result. */
-export function resolveClaudePath(): string {
+let _claudePath: ClaudeLaunch | null = null;
+
+/**
+ * Resolve how to launch the `claude` CLI for `child_process.spawn`.
+ *
+ * On Windows, Node (>=18.20 / 20.12 / 21.7, CVE-2024-27980) refuses to spawn
+ * `.cmd`/`.bat` files directly — it throws `EINVAL`. We therefore prefer a
+ * `.exe` when available, otherwise fall back to invoking the underlying
+ * `cli.js` through the current Node binary.
+ */
+export function resolveClaudePath(): ClaudeLaunch {
   if (_claudePath) return _claudePath;
 
   if (process.platform === "win32") {
     try {
       const result = execFileSync("where.exe", ["claude"], { encoding: "utf8", timeout: 5000 });
-      const lines = result.trim().split(/\r?\n/);
-      // Prefer .exe over .cmd/.cmd shim (extensionless npm shim can't be spawned without shell)
-      const exeLine = lines.find((l) => l.endsWith(".exe"));
-      const pick = exeLine || lines.find((l) => l.endsWith(".cmd")) || lines[0];
-      if (pick) {
-        _claudePath = pick;
+      const lines = result.trim().split(/\r?\n/).filter(Boolean);
+      const exeLine = lines.find((l) => l.toLowerCase().endsWith(".exe"));
+      if (exeLine) {
+        _claudePath = { command: exeLine, prependArgs: [] };
         return _claudePath;
+      }
+      // No .exe — locate the real cli.js near the shim and invoke via node.
+      const shim = lines.find((l) => l.toLowerCase().endsWith(".cmd")) || lines[0];
+      if (shim) {
+        const dir = path.dirname(shim);
+        const cliJs = path.join(dir, "node_modules", "@anthropic-ai", "claude-code", "cli.js");
+        if (fs.existsSync(cliJs)) {
+          _claudePath = { command: process.execPath, prependArgs: [cliJs] };
+          return _claudePath;
+        }
       }
     } catch {}
   } else {
@@ -78,13 +100,13 @@ export function resolveClaudePath(): string {
       const result = execFileSync("which", ["claude"], { encoding: "utf8", timeout: 5000 });
       const firstLine = result.trim().split(/\r?\n/)[0];
       if (firstLine) {
-        _claudePath = firstLine;
+        _claudePath = { command: firstLine, prependArgs: [] };
         return _claudePath;
       }
     } catch {}
   }
 
-  _claudePath = "claude";
+  _claudePath = { command: "claude", prependArgs: [] };
   return _claudePath;
 }
 

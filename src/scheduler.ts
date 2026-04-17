@@ -155,10 +155,12 @@ export async function parseScheduleWithClaude(input: string): Promise<{
     // Strip CLAUDECODE env var so CLI subprocess doesn't refuse to start
     const { CLAUDECODE: _, ...cleanEnv } = process.env;
 
+    const launch = resolveClaudePath();
     const resultText = await new Promise<string>((resolve, reject) => {
       const child = execFile(
-        resolveClaudePath(),
+        launch.command,
         [
+          ...launch.prependArgs,
           "--print",
           "--output-format", "json",
           "--model", "claude-haiku-4-5-20251001",
