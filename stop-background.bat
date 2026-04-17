@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 :: Elsa — stop daemon (Windows)
 
@@ -9,7 +9,7 @@ for /f "tokens=2" %%p in ('tasklist /fi "WINDOWTITLE eq Elsa Daemon" 2^>nul ^| f
     set FOUND=1
 )
 
-if %FOUND% equ 1 (
+if !FOUND! equ 1 (
     echo Elsa stopped.
 ) else (
     echo Elsa is not running.

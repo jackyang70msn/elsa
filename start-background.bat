@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 :: Elsa — background launcher (Windows)
 :: Usage: Double-click or run in cmd / PowerShell
@@ -24,7 +24,7 @@ if not exist "node_modules" (
         pause
         exit /b 1
     )
-    echo.
+    echo(
 )
 
 :: Check for existing Elsa daemon via PID file
@@ -32,12 +32,12 @@ set "PID_FILE=%USERPROFILE%\.elsa\daemon.pid"
 if exist "%PID_FILE%" (
     set /p EXISTING_PID=<"%PID_FILE%"
     if defined EXISTING_PID (
-        tasklist /FI "PID eq %EXISTING_PID%" 2>nul | findstr /I "node" >nul
-        if %errorlevel% equ 0 (
-            echo.
-            echo ERROR: Another Elsa is already running (PID %EXISTING_PID%).
+        tasklist /FI "PID eq !EXISTING_PID!" 2>nul | findstr /I "node" >nul
+        if !errorlevel! equ 0 (
+            echo(
+            echo ERROR: Another Elsa is already running ^(PID !EXISTING_PID!^).
             echo        Stop it first: run stop-background.bat
-            echo.
+            echo(
             pause
             exit /b 1
         )
